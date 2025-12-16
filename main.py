@@ -187,9 +187,9 @@ class PathfindingVisualizer:
                     if current_maze_type == 'random':
                         obstacles = generate_random_walls(self.width, self.height, density=0.2)
                     elif current_maze_type == 'walls':
-                        obstacles = generate_maze_walls(self.width, self.height, wall_length=8, num_walls=12)
+                        obstacles = generate_maze_walls(self.width, self.height, wall_length=10, num_walls=20)
                     elif current_maze_type == 'rooms':
-                        obstacles = generate_rooms(self.width, self.height, num_rooms=3)
+                        obstacles = generate_rooms(self.width, self.height, num_rooms=6)
                     
                     # Keep areas around start/end clear
                     if current_maze_type != 'none':

@@ -11,11 +11,13 @@ class BFSAlgorithm(PathfindingAlgorithm):
     def __init__(self):
         super().__init__("BFS (Breadth-First Search)")
     
-    def find_path(self, start, end, width, height):
+    def find_path(self, start, end, width, height, obstacles=None):
         """
         BFS pathfinding algorithm
         Explores nodes level by level using a queue
         """
+        if obstacles is None:
+            obstacles = set()
         queue = deque([start])
         visited = {start}
         parent = {start: None}
@@ -36,7 +38,7 @@ class BFSAlgorithm(PathfindingAlgorithm):
             yield ('visited', current)
             
             # Explore neighbors
-            for neighbor in self.get_neighbors(*current, width, height):
+            for neighbor in self.get_neighbors(*current, width, height, obstacles):
                 if neighbor not in visited:
                     visited.add(neighbor)
                     parent[neighbor] = current

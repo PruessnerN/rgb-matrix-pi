@@ -13,12 +13,14 @@ class GreedyBestFirstAlgorithm(PathfindingAlgorithm):
     def __init__(self):
         super().__init__("Greedy Best-First Search")
     
-    def find_path(self, start, end, width, height):
+    def find_path(self, start, end, width, height, obstacles=None):
         """
         Greedy Best-First Search
         Uses only heuristic (h) to guide search, ignoring actual cost (g)
         Visual effect: Very focused "beeline" toward target
         """
+        if obstacles is None:
+            obstacles = set()
         # Priority queue: (heuristic, node)
         pq = [(0, start)]
         visited = set()
@@ -48,7 +50,7 @@ class GreedyBestFirstAlgorithm(PathfindingAlgorithm):
             yield ('visited', current)
             
             # Explore neighbors
-            for neighbor in self.get_neighbors(*current, width, height):
+            for neighbor in self.get_neighbors(*current, width, height, obstacles):
                 if neighbor not in visited:
                     # Only use heuristic, ignore actual cost
                     h_score = self.manhattan_distance(neighbor, end)

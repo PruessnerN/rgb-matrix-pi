@@ -12,11 +12,13 @@ class DijkstraAlgorithm(PathfindingAlgorithm):
     def __init__(self):
         super().__init__("Dijkstra's Algorithm")
     
-    def find_path(self, start, end, width, height):
+    def find_path(self, start, end, width, height, obstacles=None):
         """
         Dijkstra's pathfinding algorithm
         Uses priority queue to explore lowest-cost nodes first
         """
+        if obstacles is None:
+            obstacles = set()
         # Priority queue: (cost, node)
         pq = [(0, start)]
         visited = set()
@@ -51,7 +53,7 @@ class DijkstraAlgorithm(PathfindingAlgorithm):
             yield ('visited', current)
             
             # Explore neighbors
-            for neighbor in self.get_neighbors(*current, width, height):
+            for neighbor in self.get_neighbors(*current, width, height, obstacles):
                 if neighbor not in visited:
                     new_cost = current_cost + 1  # All edges have cost 1
                     

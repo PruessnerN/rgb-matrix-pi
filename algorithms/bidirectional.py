@@ -12,11 +12,13 @@ class BidirectionalAlgorithm(PathfindingAlgorithm):
     def __init__(self):
         super().__init__("Bidirectional Search")
     
-    def find_path(self, start, end, width, height):
+    def find_path(self, start, end, width, height, obstacles=None):
         """
         Bidirectional search - explores from both start and end
         Visual effect: Two wavefronts expanding toward each other
         """
+        if obstacles is None:
+            obstacles = set()
         if start == end:
             yield ('found', [start])
             return
@@ -49,7 +51,7 @@ class BidirectionalAlgorithm(PathfindingAlgorithm):
                 
                 yield ('visited', current)
                 
-                for neighbor in self.get_neighbors(*current, width, height):
+                for neighbor in self.get_neighbors(*current, width, height, obstacles):
                     if neighbor not in visited_forward:
                         visited_forward.add(neighbor)
                         parent_forward[neighbor] = current
@@ -71,7 +73,7 @@ class BidirectionalAlgorithm(PathfindingAlgorithm):
                 
                 yield ('visited', current)
                 
-                for neighbor in self.get_neighbors(*current, width, height):
+                for neighbor in self.get_neighbors(*current, width, height, obstacles):
                     if neighbor not in visited_backward:
                         visited_backward.add(neighbor)
                         parent_backward[neighbor] = current

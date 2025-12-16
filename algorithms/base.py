@@ -8,14 +8,17 @@ class PathfindingAlgorithm:
     def __init__(self, name="Base Algorithm"):
         self.name = name
     
-    def get_neighbors(self, x, y, width, height):
-        """Get valid neighboring coordinates (4-directional)"""
+    def get_neighbors(self, x, y, width, height, obstacles=None):
+        """Get valid neighboring coordinates (4-directional), excluding obstacles"""
+        if obstacles is None:
+            obstacles = set()
+        
         neighbors = []
         directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # Right, Down, Left, Up
         
         for dx, dy in directions:
             nx, ny = x + dx, y + dy
-            if 0 <= nx < width and 0 <= ny < height:
+            if 0 <= nx < width and 0 <= ny < height and (nx, ny) not in obstacles:
                 neighbors.append((nx, ny))
         
         return neighbors

@@ -12,12 +12,14 @@ class RandomWalkAlgorithm(PathfindingAlgorithm):
     def __init__(self):
         super().__init__("Random Walk (Drunkard)")
     
-    def find_path(self, start, end, width, height):
+    def find_path(self, start, end, width, height, obstacles=None):
         """
         Random walk pathfinding
         Visual effect: Chaotic wandering until it stumbles onto the goal
         Then shows the shortest path instead of the wandering trail
         """
+        if obstacles is None:
+            obstacles = set()
         current = start
         visited = set()
         parent = {start: None}
@@ -42,7 +44,7 @@ class RandomWalkAlgorithm(PathfindingAlgorithm):
             visited.add(current)
             
             # Get neighbors and pick one randomly
-            neighbors = self.get_neighbors(*current, width, height)
+            neighbors = self.get_neighbors(*current, width, height, obstacles)
             
             # Prefer unvisited neighbors, but occasionally revisit
             unvisited = [n for n in neighbors if n not in visited]

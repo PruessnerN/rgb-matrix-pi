@@ -13,11 +13,13 @@ class JumpPointSearchAlgorithm(PathfindingAlgorithm):
     def __init__(self):
         super().__init__("Jump Point Search")
     
-    def find_path(self, start, end, width, height):
+    def find_path(self, start, end, width, height, obstacles=None):
         """
         Jump Point Search - skips intermediate nodes
         Visual effect: Sparse exploration with long jumps
         """
+        if obstacles is None:
+            obstacles = set()
         pq = [(0, 0, start)]
         visited = set()
         parent = {start: None}
@@ -42,7 +44,7 @@ class JumpPointSearchAlgorithm(PathfindingAlgorithm):
             
             # Find jump points (cardinal directions)
             for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
-                jump_point = self._jump(current, (dx, dy), end, width, height, visited)
+                jump_point = self._jump(current, (dx, dy), end, width, height, visited, obstacles)
                 if jump_point and jump_point not in visited:
                     # Calculate cost to jump point
                     jump_cost = self.manhattan_distance(current, jump_point)
@@ -57,7 +59,7 @@ class JumpPointSearchAlgorithm(PathfindingAlgorithm):
         
         yield ('no_path', None)
     
-    def _jump(self, current, direction, goal, width, height, visited):
+    def _jump(self, current, direction, goal, width, height, visited, obstacles):
         """
         Jump in a direction until hitting an obstacle or finding a jump point
         Returns the jump point or None
@@ -68,8 +70,8 @@ class JumpPointSearchAlgorithm(PathfindingAlgorithm):
         # Jump in the direction
         nx, ny = x + dx, y + dy
         
-        # Check bounds
-        if not (0 <= nx < width and 0 <= ny < height):
+        # Check bounds and obstacles
+        if not (0 <= nx < width and 0 <= ny < height) or (nx, ny) in obstacles:
             return None
         
         next_node = (nx, ny)
@@ -82,7 +84,7 @@ class JumpPointSearchAlgorithm(PathfindingAlgorithm):
         # Jump 3 steps at a time
         for _ in range(3):
             nx, ny = nx + dx, ny + dy
-            if not (0 <= nx < width and 0 <= ny < height):
+            if not (0 <= nx < width and 0 <= ny < height) or (nx, ny) in obstacles:
                 return next_node
             next_node = (nx, ny)
             if next_node == goal:

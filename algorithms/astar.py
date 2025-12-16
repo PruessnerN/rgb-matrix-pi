@@ -12,13 +12,15 @@ class AStarAlgorithm(PathfindingAlgorithm):
     def __init__(self):
         super().__init__("A* (A-Star)")
     
-    def find_path(self, start, end, width, height):
+    def find_path(self, start, end, width, height, obstacles=None):
         """
         A* pathfinding algorithm
         Uses f(n) = g(n) + h(n) where:
         - g(n) = cost from start to n
         - h(n) = heuristic estimate from n to goal (Manhattan distance)
         """
+        if obstacles is None:
+            obstacles = set()
         # Priority queue: (f_score, g_score, node)
         # Include g_score as tiebreaker for consistent ordering
         pq = [(0, 0, start)]
@@ -54,7 +56,7 @@ class AStarAlgorithm(PathfindingAlgorithm):
             yield ('visited', current)
             
             # Explore neighbors
-            for neighbor in self.get_neighbors(*current, width, height):
+            for neighbor in self.get_neighbors(*current, width, height, obstacles):
                 if neighbor not in visited:
                     tentative_g = current_g + 1  # All edges have cost 1
                     

@@ -162,34 +162,42 @@ class PathfindingVisualizer:
                 print(f"Iteration {iteration + 1}/{iterations}")
                 print('='*50)
                 
-                # Generate obstacles based on maze type
-                obstacles = set()
-                if maze_type == 'random':
-                    obstacles = generate_random_walls(self.width, self.height, density=0.2)
-                elif maze_type == 'walls':
-                    obstacles = generate_maze_walls(self.width, self.height, wall_length=8, num_walls=12)
-                elif maze_type == 'rooms':
-                    obstacles = generate_rooms(self.width, self.height, num_rooms=3)
-                
-                # Generate random points that avoid obstacles
-                while True:
-                    start, end = self.generate_random_points()
-                    if start not in obstacles and end not in obstacles:
-                        break
-                
-                # Update obstacles to keep areas around start/end clear
-                if maze_type != 'none':
-                    for dx in range(-1, 2):
-                        for dy in range(-1, 2):
-                            obstacles.discard((start[0] + dx, start[1] + dy))
-                            obstacles.discard((end[0] + dx, end[1] + dy))
+                # Generate random points for this iteration
+                start, end = self.generate_random_points()
                 
                 # Randomize algorithm order for each iteration
                 shuffled_algorithms = self.algorithms.copy()
                 random.shuffle(shuffled_algorithms)
                 
-                # Run each algorithm with the same start/end points and obstacles
+                # Track which maze type to use for alternate mode
+                maze_types = ['random', 'walls', 'rooms']
+                maze_index = 0
+                
+                # Run each algorithm with the same start/end points but NEW obstacles each time
                 for algorithm in shuffled_algorithms:
+                    # Determine current maze type
+                    if maze_type == 'alternate':
+                        current_maze_type = maze_types[maze_index % len(maze_types)]
+                        maze_index += 1
+                    else:
+                        current_maze_type = maze_type
+                    
+                    # Generate fresh obstacles for each algorithm
+                    obstacles = set()
+                    if current_maze_type == 'random':
+                        obstacles = generate_random_walls(self.width, self.height, density=0.2)
+                    elif current_maze_type == 'walls':
+                        obstacles = generate_maze_walls(self.width, self.height, wall_length=8, num_walls=12)
+                    elif current_maze_type == 'rooms':
+                        obstacles = generate_rooms(self.width, self.height, num_rooms=3)
+                    
+                    # Keep areas around start/end clear
+                    if current_maze_type != 'none':
+                        for dx in range(-1, 2):
+                            for dy in range(-1, 2):
+                                obstacles.discard((start[0] + dx, start[1] + dy))
+                                obstacles.discard((end[0] + dx, end[1] + dy))
+                    
                     self.visualize_algorithm(algorithm, start, end, obstacles)
                     time.sleep(1)  # Pause between algorithms
                 
@@ -223,9 +231,9 @@ def main():
                        help='Number of complete cycles through all algorithms')
     parser.add_argument('--delay', type=float, default=0.02,
                        help='Delay between steps (seconds)')
-    parser.add_argument('--maze', type=str, default='random',
-                       choices=['none', 'random', 'walls', 'rooms'],
-                       help='Maze/obstacle type: none (empty grid), random (scattered walls), walls (maze-like), rooms (rectangular rooms)')
+    parser.add_argument('--maze', type=str, default='alternate',
+                       choices=['none', 'random', 'walls', 'rooms', 'alternate'],
+                       help='Maze/obstacle type: none (empty grid), random (scattered walls), walls (maze-like), rooms (rectangular rooms), alternate (cycles through all types)')
     
     args = parser.parse_args()
     

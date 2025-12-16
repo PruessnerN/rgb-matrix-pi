@@ -12,7 +12,6 @@ import argparse
 
 # Import pathfinding algorithms
 from algorithms.bfs import BFSAlgorithm
-from algorithms.dfs import DFSAlgorithm
 from algorithms.dijkstra import DijkstraAlgorithm
 from algorithms.astar import AStarAlgorithm
 from algorithms.bidirectional import BidirectionalAlgorithm
@@ -58,7 +57,6 @@ class PathfindingVisualizer:
         # Initialize algorithms
         self.algorithms = [
             BFSAlgorithm(),
-            DFSAlgorithm(),
             DijkstraAlgorithm(),
             AStarAlgorithm(),
             BidirectionalAlgorithm(),
@@ -154,8 +152,12 @@ class PathfindingVisualizer:
                 # Generate new random points for this iteration
                 start, end = self.generate_random_points()
                 
+                # Randomize algorithm order for each iteration
+                shuffled_algorithms = self.algorithms.copy()
+                random.shuffle(shuffled_algorithms)
+                
                 # Run each algorithm with the same start/end points
-                for algorithm in self.algorithms:
+                for algorithm in shuffled_algorithms:
                     self.visualize_algorithm(algorithm, start, end)
                     time.sleep(1)  # Pause between algorithms
                 

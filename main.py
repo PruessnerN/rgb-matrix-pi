@@ -223,7 +223,7 @@ def main():
                        help='Number of complete cycles through all algorithms')
     parser.add_argument('--delay', type=float, default=0.02,
                        help='Delay between steps (seconds)')
-    parser.add_argument('--maze', type=str, default='none',
+    parser.add_argument('--maze', type=str, default='random',
                        choices=['none', 'random', 'walls', 'rooms'],
                        help='Maze/obstacle type: none (empty grid), random (scattered walls), walls (maze-like), rooms (rectangular rooms)')
     

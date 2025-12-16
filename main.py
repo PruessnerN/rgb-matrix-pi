@@ -18,7 +18,7 @@ from algorithms.astar import AStarAlgorithm
 
 
 class PathfindingVisualizer:
-    def __init__(self, rows=64, cols=64, hardware_mapping='adafruit-hat'):
+    def __init__(self, rows=64, cols=64, hardware_mapping='adafruit-hat', gpio_slowdown=2):
         # Matrix configuration
         options = RGBMatrixOptions()
         options.rows = rows
@@ -26,7 +26,7 @@ class PathfindingVisualizer:
         options.chain_length = 1
         options.parallel = 1
         options.hardware_mapping = hardware_mapping
-        options.gpio_slowdown = 2
+        options.gpio_slowdown = gpio_slowdown
         
         self.matrix = RGBMatrix(options=options)
         self.width = self.matrix.width
@@ -159,6 +159,8 @@ def main():
     parser.add_argument('--led-cols', type=int, default=64, help='Matrix columns')
     parser.add_argument('--led-gpio-mapping', default='adafruit-hat', 
                        help='GPIO mapping (adafruit-hat, regular, etc.)')
+    parser.add_argument('--led-slowdown-gpio', type=int, default=2,
+                       help='GPIO slowdown (0=no slowdown, 1-4=increasing slowdown)')
     parser.add_argument('--iterations', type=int, default=1, 
                        help='Number of complete cycles through all algorithms')
     parser.add_argument('--delay', type=float, default=0.02,
@@ -169,7 +171,8 @@ def main():
     visualizer = PathfindingVisualizer(
         rows=args.led_rows,
         cols=args.led_cols,
-        hardware_mapping=args.led_gpio_mapping
+        hardware_mapping=args.led_gpio_mapping,
+        gpio_slowdown=args.led_slowdown_gpio
     )
     
     visualizer.delay = args.delay

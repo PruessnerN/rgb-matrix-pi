@@ -51,7 +51,7 @@ class PathfindingVisualizer:
         self.COLOR_START = (0, 255, 0)         # Green
         self.COLOR_END = (255, 0, 0)           # Red
         self.COLOR_EXPLORING = (0, 100, 255)   # Blue (currently exploring)
-        self.COLOR_VISITED = (50, 50, 50)      # Dark gray (already visited)
+        self.COLOR_VISITED = (30, 30, 30)      # Very dark gray (already visited)
         self.COLOR_PATH = (255, 255, 0)        # Yellow (final path)
         self.COLOR_WALL = (100, 0, 100)        # Deep purple (obstacles/walls)
         

@@ -53,7 +53,7 @@ class PathfindingVisualizer:
         self.COLOR_EXPLORING = (0, 100, 255)   # Blue (currently exploring)
         self.COLOR_VISITED = (50, 50, 50)      # Dark gray (already visited)
         self.COLOR_PATH = (255, 255, 0)        # Yellow (final path)
-        self.COLOR_WALL = (128, 128, 128)      # Gray (obstacles/walls)
+        self.COLOR_WALL = (200, 0, 200)        # Purple (obstacles/walls)
         
         # Animation delay (seconds between steps)
         self.delay = 0.02

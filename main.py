@@ -39,7 +39,7 @@ class PathfindingVisualizer:
         # Anti-flickering options
         options.pwm_bits = pwm_bits  # Valid range: 1-11 (lower = less flickering but fewer colors)
         options.brightness = brightness  # 1-100
-        options.pwm_lsb_nanoseconds = 130  # Lower values = less ghosting/flickering
+        options.pwm_lsb_nanoseconds = 60  # Lower values = less ghosting/flickering
         options.limit_refresh_rate_hz = limit_refresh_rate  # 0 = no limit
         options.disable_hardware_pulsing = disable_hardware_pulsing  # Try True if flickering persists
         

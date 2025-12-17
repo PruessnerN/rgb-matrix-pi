@@ -77,11 +77,11 @@ class ClockDisplay:
         draw.text((time_x, time_y), timestr, fill=(255, 255, 0), font=tf)
 
         w2, h2 = _text_size(datestr, df)
-        # offset date to the right and a bit lower for an artistic touch
-        offset_x = int(self.width * 0.08)
+        # offset date more to the right and add extra vertical spacing for clarity
+        offset_x = int(self.width * 0.12)
         date_x = min(self.width - w2 - 1, time_x + offset_x)
-        # ensure date doesn't go off the bottom
-        date_y = min(self.height - h2 - 1, time_y + h + int(self.height * 0.06))
+        # ensure date doesn't go off the bottom; increase vertical gap between time and date
+        date_y = min(self.height - h2 - 1, time_y + h + int(self.height * 0.12))
         draw.text((date_x, date_y), datestr, fill=(0, 255, 255), font=df)
 
         return img

@@ -25,8 +25,7 @@ from maze_generator import generate_random_walls, generate_maze_walls, generate_
 
 class PathfindingVisualizer:
     def __init__(self, rows=64, cols=64, hardware_mapping='adafruit-hat', gpio_slowdown=2, 
-                 pwm_bits=11, brightness=100, limit_refresh_rate=0, disable_hardware_pulsing=False,
-                 max_updates_per_sec=60):
+                 pwm_bits=11, brightness=100, limit_refresh_rate=0, disable_hardware_pulsing=False):
         # Matrix configuration
         options = RGBMatrixOptions()
         options.rows = rows
@@ -46,16 +45,7 @@ class PathfindingVisualizer:
         self.matrix = RGBMatrix(options=options)
         self.width = self.matrix.width
         self.height = self.matrix.height
-        # Offscreen frame canvas (use SwapOnVSync when available to reduce tearing)
-        try:
-            self.offscreen_canvas = self.matrix.CreateFrameCanvas()
-        except Exception:
-            # Some bindings/hardware might not support frame canvas; fall back to SetImage
-            self.offscreen_canvas = None
-
-        # Display throttling (max SetImage calls per second)
-        self.update_rate = max_updates_per_sec if max_updates_per_sec and max_updates_per_sec > 0 else 60
-        self._last_update_time = 0.0
+        # (Using direct SetImage updates)
         
         # Colors
         self.COLOR_BACKGROUND = (0, 0, 0)      # Black
@@ -89,50 +79,7 @@ class PathfindingVisualizer:
         if 0 <= x < self.width and 0 <= y < self.height:
             image.putpixel((x, y), color)
 
-    def maybe_update_display(self, image, force=False):
-        """Update the physical display at most `self.update_rate` times per second.
-        Use `force=True` for immediate important frames (start/end/final path steps).
-        """
-        if force:
-            # Try using offscreen canvas + SwapOnVSync for atomic VSync update
-            if self.offscreen_canvas is not None:
-                try:
-                    self.offscreen_canvas.SetImage(image)
-                    # Swap returns a new canvas on some bindings
-                    self.offscreen_canvas = self.matrix.SwapOnVSync(self.offscreen_canvas)
-                    self._last_update_time = time.time()
-                    return
-                except AttributeError:
-                    # SwapOnVSync not available; fall back
-                    pass
-                except Exception:
-                    # Any other canvas error: fall back
-                    pass
-
-            # Fallback to direct SetImage
-            self.matrix.SetImage(image)
-            self._last_update_time = time.time()
-            return
-
-        now = time.time()
-        min_interval = 1.0 / float(self.update_rate)
-        if now - self._last_update_time >= min_interval:
-            if self.offscreen_canvas is not None:
-                try:
-                    self.offscreen_canvas.SetImage(image)
-                    self.offscreen_canvas = self.matrix.SwapOnVSync(self.offscreen_canvas)
-                    self._last_update_time = now
-                    return
-                except AttributeError:
-                    # SwapOnVSync not available; fall back
-                    pass
-                except Exception:
-                    # Any other canvas error: fall back
-                    pass
-
-            # Fallback to direct SetImage
-            self.matrix.SetImage(image)
-            self._last_update_time = now
+    # Using direct SetImage updates to the matrix (no throttling/frame-canvas)
     
     def generate_random_points(self, min_distance=20):
         """Generate random start and end points with minimum distance"""
@@ -163,8 +110,8 @@ class PathfindingVisualizer:
         # Draw start and end points
         self.draw_pixel(image, start[0], start[1], self.COLOR_START)
         self.draw_pixel(image, end[0], end[1], self.COLOR_END)
-        # Force an immediate display of start/end
-        self.maybe_update_display(image, force=True)
+        # Show start/end immediately
+        self.matrix.SetImage(image)
         time.sleep(1)  # Pause to show start/end
         
         # Run pathfinding algorithm
@@ -174,7 +121,7 @@ class PathfindingVisualizer:
                 # Don't overwrite start/end points or walls
                 if (x, y) != start and (x, y) != end and (x, y) not in obstacles:
                     self.draw_pixel(image, x, y, self.COLOR_EXPLORING)
-                    self.maybe_update_display(image)
+                    self.matrix.SetImage(image)
                     time.sleep(self.delay)
             
             elif state_type == 'visited':
@@ -182,7 +129,7 @@ class PathfindingVisualizer:
                 # Don't overwrite start/end points or walls
                 if (x, y) != start and (x, y) != end and (x, y) not in obstacles:
                     self.draw_pixel(image, x, y, self.COLOR_VISITED)
-                    self.maybe_update_display(image)
+                    self.matrix.SetImage(image)
             
             elif state_type == 'found':
                 path = data
@@ -194,8 +141,8 @@ class PathfindingVisualizer:
                 for x, y in path:
                     if (x, y) != start and (x, y) != end and (x, y) not in obstacles:
                         self.draw_pixel(image, x, y, self.COLOR_PATH)
-                        # Force display updates for final path animation
-                        self.maybe_update_display(image, force=True)
+                        # Immediate update for final path animation
+                        self.matrix.SetImage(image)
                         time.sleep(self.delay * 2)
                 
                 # Keep final result visible
@@ -292,8 +239,6 @@ def main():
     parser.add_argument('--maze', type=str, default='alternate',
                        choices=['none', 'random', 'walls', 'rooms', 'alternate'],
                        help='Maze/obstacle type: none (empty grid), random (scattered walls), walls (maze-like), rooms (rectangular rooms), alternate (cycles through all types)')
-    parser.add_argument('--max-updates-per-sec', type=int, default=60,
-                       help='Maximum display updates per second (throttles SetImage calls)')
     
     args = parser.parse_args()
     
@@ -306,7 +251,7 @@ def main():
         brightness=args.led_brightness,
         limit_refresh_rate=args.led_limit_refresh,
         disable_hardware_pulsing=args.led_no_hardware_pulse,
-        max_updates_per_sec=args.max_updates_per_sec
+        
     )
     
     visualizer.delay = args.delay

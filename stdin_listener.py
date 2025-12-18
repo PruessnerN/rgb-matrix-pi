@@ -6,6 +6,8 @@ import termios
 import tty
 import select
 import logging
+import signal
+import os
 
 log = logging.getLogger('stdin_listener')
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(name)s %(levelname)s: %(message)s')
@@ -55,12 +57,13 @@ class StdinListener:
 
     def stop(self):
         self.running = False
-        # Restore terminal settings
+        # Restore terminal settings immediately
         if self.old_settings:
             try:
-                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
-            except Exception:
-                pass
+                termios.tcsetattr(sys.stdin, termios.TCSANOW, self.old_settings)
+                log.info('Terminal settings restored')
+            except Exception as e:
+                log.warning('Could not restore terminal: %s', e)
 
     def _run(self):
         # Set terminal to raw mode
@@ -118,13 +121,29 @@ class StdinListener:
                     
                     buf = ''
                 elif ch == '\x03':  # Ctrl+C
-                    log.info('Ctrl+C detected')
+                    log.info('Ctrl+C detected, raising KeyboardInterrupt')
                     self.running = False
+                    # Restore terminal before raising
+                    if self.old_settings:
+                        try:
+                            termios.tcsetattr(sys.stdin, termios.TCSANOW, self.old_settings)
+                        except Exception:
+                            pass
+                    # Send SIGINT to main process
+                    os.kill(os.getpid(), signal.SIGINT)
                     break
                 
             except Exception as e:
                 log.exception('Stdin read error: %s', e)
                 time.sleep(0.1)
+        
+        # Always restore terminal when exiting
+        if self.old_settings:
+            try:
+                termios.tcsetattr(sys.stdin, termios.TCSANOW, self.old_settings)
+                log.info('Terminal restored at exit')
+            except Exception:
+                pass
 
     def get_event(self, timeout=None):
         try:

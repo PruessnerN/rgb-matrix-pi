@@ -66,19 +66,68 @@ class HIDListener:
                 h.open(self.vid, self.pid)
                 return h
 
-            # enumerate and pick first keyboard-like device
+            # enumerate and pick first keyboard-like device with a quick probe
+            def _s(x):
+                return (x.decode('utf-8', 'ignore') if isinstance(x, (bytes, bytearray)) else x) or ''
+
+            candidates = []
             for d in hid.enumerate():
-                # match usage_page/usage or interface if present
-                # prefer devices with usage_page==1 (Generic Desktop) and usage==6 (Keyboard)
-                # but not all enumerators expose that; fall back to first HID keyboard vendor device
-                name = d.get('product_string') or d.get('manufacturer_string') or ''
-                if 'keyboard' in name.lower() or 'logitech' in name.lower():
-                    h = hid.device()
+                prod = _s(d.get('product_string'))
+                mfg = _s(d.get('manufacturer_string'))
+                usage_page = d.get('usage_page')
+                usage = d.get('usage')
+                iface = d.get('interface_number')
+                path = d.get('path')
+                is_keyboard = False
+                # Strong signal: keyboard usage page
+                if usage_page == 0x01 and usage == 0x06:
+                    is_keyboard = True
+                # Heuristics on strings
+                if ('keyboard' in prod.lower()) or ('keyboard' in mfg.lower()):
+                    is_keyboard = True
+                # Common keyboard interfaces
+                if iface in (0, 1) and ('logitech' in mfg.lower() or 'key' in prod.lower()):
+                    is_keyboard = True
+                if is_keyboard and path:
+                    candidates.append({
+                        'path': path,
+                        'vendor_id': d.get('vendor_id'),
+                        'product_id': d.get('product_id'),
+                        'product_string': prod,
+                        'manufacturer_string': mfg,
+                        'usage_page': usage_page,
+                        'usage': usage,
+                        'interface_number': iface,
+                    })
+
+            if candidates:
+                log.info('HID candidates: %s', [
+                    (hex(c['vendor_id']) if isinstance(c['vendor_id'], int) else c['vendor_id'],
+                     hex(c['product_id']) if isinstance(c['product_id'], int) else c['product_id'],
+                     c['product_string']) for c in candidates
+                ])
+
+            for c in candidates:
+                h = hid.device()
+                try:
+                    h.open_path(c['path'])
+                    # quick probe read to ensure it responds
                     try:
-                        h.open_path(d['path'])
-                        return h
+                        h.set_nonblocking(1)
                     except Exception:
-                        continue
+                        pass
+                    try:
+                        probe = h.read(8, timeout_ms=50)
+                    except TypeError:
+                        probe = h.read(8)
+                    # Accept device regardless of probe; some require a key press first
+                    return h
+                except Exception:
+                    try:
+                        h.close()
+                    except Exception:
+                        pass
+                    continue
 
             raise RuntimeError('No suitable HID device found')
         except Exception:

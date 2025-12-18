@@ -185,11 +185,11 @@ class HIDListener:
                     
                 data = None
                 try:
-                    # Nonblocking read with short timeout
-                    data = self.dev.read(8, timeout_ms=100)
+                    # Nonblocking read with short timeout; read larger to include report ID if present
+                    data = self.dev.read(16, timeout_ms=100)
                 except TypeError:
                     # some hid bindings use read(size) returning bytes without timeout
-                    data = self.dev.read(8)
+                    data = self.dev.read(16)
                 except OSError as e:
                     # During shutdown, OSError is expected when device closes
                     if not self.running:
@@ -218,14 +218,18 @@ class HIDListener:
                 else:
                     buf = list(data)
 
-                # Boot keyboard report: [mod, reserved, k1, k2, k3, k4, k5, k6]
+                # Boot keyboard report: [mod, reserved, k1..k6]
+                # Some devices prepend a Report ID byte. Try parsing with offset 0 and 1.
                 keys = set()
-                for usage in buf[2:]:
-                    if usage == 0:
-                        continue
-                    name = USAGE_ARROW_MAP.get(usage)
-                    if name:
-                        keys.add(name)
+                for offset in (0, 1):
+                    start = offset + 2
+                    end = start + 6
+                    for usage in buf[start:end]:
+                        if usage == 0:
+                            continue
+                        name = USAGE_ARROW_MAP.get(usage)
+                        if name:
+                            keys.add(name)
 
                 # compute down/up
                 down = keys - prev_keys

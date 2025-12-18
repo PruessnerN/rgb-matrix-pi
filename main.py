@@ -265,6 +265,8 @@ def main():
                        help='HID product id (hex like 0xc52b or decimal)')
     parser.add_argument('--hid-path', type=str, default=None,
                        help='HID device path (optional, e.g. /dev/hidraw0)')
+    parser.add_argument('--hid-debug', action='store_true',
+                       help='Log raw HID reports and key events for debugging')
     
     args = parser.parse_args()
     
@@ -296,7 +298,7 @@ def main():
         except Exception:
             pid = int(args.hid_pid)
 
-    input_listener = InputListener(vid=vid, pid=pid, device_path=args.hid_path)
+    input_listener = InputListener(vid=vid, pid=pid, device_path=args.hid_path, debug_raw=args.hid_debug)
     try:
         input_listener.start()
     except Exception as e:

@@ -283,23 +283,6 @@ def main():
     except Exception as e:
         log.error('Input listener could not start: %s', e)
 
-    # start a background thread to log incoming raw events for debugging
-    def _drain_events():
-        while True:
-            try:
-                evt = input_listener.get_event(timeout=1.0)
-                if evt:
-                    key, is_down, ts = evt
-                    log.info('Input event: %s %s (ts=%s)', key, 'DOWN' if is_down else 'UP', ts)
-            except Exception:
-                # keep thread alive on unexpected exceptions
-                log.exception('Error while draining input events')
-                time.sleep(1.0)
-
-    t = threading.Thread(target=_drain_events, daemon=True)
-    t.start()
-
-
     current_mode = args.initial_mode
     mode_thread = None
     mode_stop = None

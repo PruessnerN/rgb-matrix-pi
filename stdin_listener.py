@@ -106,10 +106,10 @@ class StdinListener:
                 
                 # Start of escape sequence
                 if ch == '\x1b':
+                    # Read up to 3 more characters quickly (enough for CSI/SS3 arrows)
                     sequence = [ch]
-                    # Read a few more chars with short pauses (cover CSI/SS3 and longer variants)
-                    for _ in range(5):  # read up to 5 total chars
-                        ready, _, _ = select.select([sys.stdin], [], [], 0.02)
+                    for _ in range(3):
+                        ready, _, _ = select.select([sys.stdin], [], [], 0.01)
                         if not ready:
                             break
                         nch = sys.stdin.read(1)
@@ -118,16 +118,7 @@ class StdinListener:
                         sequence.append(nch)
 
                     seq_str = ''.join(sequence)
-                    # Match by exact map or by prefix (handles sequences like ESC[1;2A)
-                    key = None
-                    if seq_str in self.ESCAPE_MAP:
-                        key = self.ESCAPE_MAP[seq_str]
-                    else:
-                        for pat, name in self.ESCAPE_MAP.items():
-                            if seq_str.startswith(pat):
-                                key = name
-                                break
-
+                    key = self.ESCAPE_MAP.get(seq_str)
                     if key:
                         self.key_states[key] = True
                         self.key_press_time[key] = time.time()

@@ -305,7 +305,7 @@ def main():
             # snake game uses SnakeGame class
             def snake_runner():
                 game = SnakeGame(visualizer.matrix, grid_size=args.snake_grid)
-                tick = 0.18  # Game update speed (slower for tap responsiveness)
+                tick = 0.16  # Game update speed (slightly slower for control)
                 last_update = time.time()
                 
                 while not mode_stop.is_set():

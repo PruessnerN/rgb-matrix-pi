@@ -14,7 +14,8 @@ import queue
 import os
 import logging
 
-from hid_listener import HIDListener as InputListener
+from hid_listener import HIDListener as HIDInputListener
+from input_listener import InputListener as EvdevInputListener
 from clock import ClockDisplay
 from snake import SnakeGame
 
@@ -267,6 +268,12 @@ def main():
                        help='HID device path (optional, e.g. /dev/hidraw0)')
     parser.add_argument('--hid-debug', action='store_true',
                        help='Log raw HID reports and key events for debugging')
+    parser.add_argument('--input-backend', type=str, default='hid', choices=['hid','evdev'],
+                       help='Input backend: hid (hidapi on /dev/hidraw*) or evdev (/dev/input/event*)')
+    parser.add_argument('--evdev-device', type=str, default=None,
+                       help='evdev device path (e.g. /dev/input/event6)')
+    parser.add_argument('--evdev-grab', action='store_true',
+                       help='Grab evdev device exclusively (may block other consumers)')
     
     args = parser.parse_args()
     
@@ -298,11 +305,21 @@ def main():
         except Exception:
             pid = int(args.hid_pid)
 
-    input_listener = InputListener(vid=vid, pid=pid, device_path=args.hid_path, debug_raw=args.hid_debug)
-    try:
-        input_listener.start()
-    except Exception as e:
-        log.warning("input listener could not start: %s", e)
+    # Choose input backend
+    if args.input_backend == 'evdev':
+        log.info('Using evdev backend%s', f" on {args.evdev_device}" if args.evdev_device else '')
+        input_listener = EvdevInputListener(device_path=args.evdev_device, grab=args.evdev_grab)
+        try:
+            input_listener.start()
+        except Exception as e:
+            log.error('Evdev input listener could not start: %s', e)
+    else:
+        log.info('Using HID backend%s', f" (vid={args.hid_vid}, pid={args.hid_pid}, path={args.hid_path})" )
+        input_listener = HIDInputListener(vid=vid, pid=pid, device_path=args.hid_path, debug_raw=args.hid_debug)
+        try:
+            input_listener.start()
+        except Exception as e:
+            log.error("HID input listener could not start: %s", e)
 
     # start a background thread to log incoming raw events for debugging
     def _drain_events():

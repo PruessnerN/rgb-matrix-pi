@@ -96,16 +96,18 @@ class StdinListener:
                 if ch == '\x1b':
                     buf = ch
                     # Read next chars quickly (for escape sequences like ESC[A)
-                    time.sleep(0.001)
-                    for _ in range(10):  # Max 10 more chars for escape sequence
-                        ready, _, _ = select.select([sys.stdin], [], [], 0.01)
-                        if not ready:
-                            break
-                        nch = sys.stdin.read(1)
-                        if not nch:
-                            break
-                        buf += nch
-                        log.debug('  Escape sequence building: %r', buf)
+                    # Arrow keys send 3 chars: ESC [ letter, need to wait for all
+                    time.sleep(0.005)  # Small delay for sequence to arrive
+                    attempts = 0
+                    max_attempts = 20
+                    while attempts < max_attempts and len(buf) < 3:
+                        ready, _, _ = select.select([sys.stdin], [], [], 0.02)
+                        if ready:
+                            nch = sys.stdin.read(1)
+                            if nch:
+                                buf += nch
+                                log.debug('  Escape sequence building: %r', buf)
+                        attempts += 1
                         if len(buf) >= 3:
                             break
                     

@@ -92,6 +92,7 @@ class Proxy:
         self.connect()
 
         def on_press(key):
+            print(key)
             k = self._map_key(key)
             if k:
                 self.send(k, True)

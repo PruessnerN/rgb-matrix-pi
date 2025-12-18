@@ -40,7 +40,7 @@ class Proxy:
                 log.info('Connected to %s', self.socket_path)
                 return
             except Exception:
-                log.debug('Connect failed, retrying...')
+                log.info('Connect failed (socket missing?), retrying in 1s...')
                 time.sleep(1.0)
 
     def send(self, key, is_down, ts=None):
@@ -52,6 +52,7 @@ class Proxy:
             with self.lock:
                 if self.sock:
                     self.sock.sendall(data)
+                    log.debug('Sent: %s %s', key, 'DOWN' if is_down else 'UP')
         except Exception as exc:
             log.warning('Send failed (%s), reconnecting', exc)
             # on failure, drop and reconnect

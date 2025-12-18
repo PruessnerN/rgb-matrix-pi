@@ -76,76 +76,75 @@ class StdinListener:
         
         log.info('Stdin read loop starting, waiting for input...')
         
-        buf = ''
-        char_count = 0
+        buffer = []
+        escape_sequence_start = None
+        
         while self.running:
             try:
-                # Non-blocking read with timeout
-                ready, _, _ = select.select([sys.stdin], [], [], 0.1)
+                # Check if data is available
+                ready, _, _ = select.select([sys.stdin], [], [], 0.01)
                 if not ready:
+                    # If we have an incomplete escape sequence that's been waiting too long, clear it
+                    if escape_sequence_start is not None:
+                        elapsed = time.time() - escape_sequence_start
+                        if elapsed > 0.1:  # 100ms timeout for incomplete sequences
+                            log.warning('Timeout waiting for escape sequence completion, clearing buffer: %r', ''.join(buffer))
+                            buffer.clear()
+                            escape_sequence_start = None
                     continue
                 
+                # Read one character
                 ch = sys.stdin.read(1)
                 if not ch:
-                    time.sleep(0.01)
                     continue
                 
-                char_count += 1
-                log.debug('Read char #%d: %r (hex: %s)', char_count, ch, ch.encode('latin-1').hex())
-                
-                # Build escape sequence buffer
-                if ch == '\x1b':
-                    buf = ch
-                    # Arrow keys send ESC[A, ESC[B, etc. (3 chars total)
-                    # Read remaining chars with reasonable timeout
-                    for attempt in range(5):
-                        ready, _, _ = select.select([sys.stdin], [], [], 0.02)  # 20ms timeout
-                        if not ready:
-                            log.debug('  No more chars available after %d attempts, buf=%r', attempt, buf)
-                            break
-                        nch = sys.stdin.read(1)
-                        if not nch:
-                            break
-                        buf += nch
-                        log.debug('  Read char, buf now: %r', buf)
-                        # Arrow sequences are 3 chars: ESC [ letter
-                        if len(buf) >= 3:
-                            break
-                    
-                    log.debug('Complete escape sequence: %r', buf)
-                    
-                    # Try to map escape sequence
-                    key = self.ESCAPE_MAP.get(buf)
-                    if key:
-                        # Send key down immediately
-                        log.info('*** Stdin event: %s DOWN ***', key)
-                        self.key_states[key] = True
-                        self.key_press_time[key] = time.time()
-                        self.last_direction = key  # Track for games
-                        self.event_queue.put((key, True, time.time()))
-                        # Don't auto-release - let main loop or game handle it
-                    else:
-                        log.warning('Unrecognized escape sequence: %r', buf)
-                    
-                    buf = ''
-                elif ch == '\x03':  # Ctrl+C
+                # Handle Ctrl+C immediately
+                if ch == '\x03':
                     log.info('Ctrl+C detected, raising KeyboardInterrupt')
                     self.running = False
-                    # Restore terminal before raising
                     if self.old_settings:
                         try:
                             termios.tcsetattr(sys.stdin, termios.TCSANOW, self.old_settings)
                         except Exception:
                             pass
-                    # Send SIGINT to main process
                     os.kill(os.getpid(), signal.SIGINT)
                     break
-                else:
-                    # Log any other character for debugging
-                    log.debug('Ignoring non-escape char: %r (hex: %s)', ch, ch.encode('latin-1').hex())
                 
+                # Start of escape sequence
+                if ch == '\x1b':
+                    buffer = [ch]
+                    escape_sequence_start = time.time()
+                    continue
+                
+                # Building escape sequence
+                if escape_sequence_start is not None:
+                    buffer.append(ch)
+                    seq = ''.join(buffer)
+                    
+                    # Check if we have a complete arrow key sequence (ESC[A/B/C/D)
+                    if len(buffer) == 3 and buffer[1] == '[' and buffer[2] in ['A', 'B', 'C', 'D']:
+                        key = self.ESCAPE_MAP.get(seq)
+                        if key:
+                            log.info('Arrow key detected: %s', key)
+                            self.key_states[key] = True
+                            self.key_press_time[key] = time.time()
+                            self.last_direction = key
+                            self.event_queue.put((key, True, time.time()))
+                        else:
+                            log.warning('Unrecognized arrow sequence: %r', seq)
+                        
+                        buffer.clear()
+                        escape_sequence_start = None
+                    # If sequence is getting too long, it's probably invalid
+                    elif len(buffer) > 5:
+                        log.warning('Invalid escape sequence (too long): %r', seq)
+                        buffer.clear()
+                        escape_sequence_start = None
+                    
             except Exception as e:
                 log.exception('Stdin read error: %s', e)
+                buffer.clear()
+                escape_sequence_start = None
                 time.sleep(0.1)
         
         # Always restore terminal when exiting

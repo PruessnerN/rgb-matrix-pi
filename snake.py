@@ -33,8 +33,8 @@ class SnakeGame:
                 self.food = (fx, fy)
                 break
 
-    def step(self, input_listener):
-        # Check for new direction input (event-based, not state-based)
+    def update_direction(self, input_listener):
+        """Update direction based on input (called frequently)"""
         new_dir = input_listener.get_last_direction()
         if new_dir == 'up' and self.direction != (0,1):
             self.direction = (0, -1)
@@ -44,7 +44,9 @@ class SnakeGame:
             self.direction = (-1, 0)
         elif new_dir == 'right' and self.direction != (-1,0):
             self.direction = (1, 0)
-
+    
+    def move(self):
+        """Move the snake one step (called on game tick)"""
         head = self.snake[0]
         new_head = ((head[0] + self.direction[0]) % self.grid, (head[1] + self.direction[1]) % self.grid)
         if new_head in self.snake:
@@ -56,6 +58,11 @@ class SnakeGame:
             self.place_food()
         else:
             self.snake.pop()
+    
+    def step(self, input_listener):
+        """Legacy combined method for backward compatibility"""
+        self.update_direction(input_listener)
+        self.move()
 
     def render(self):
         img = Image.new('RGB', (self.matrix.width, self.matrix.height), (0,0,0))

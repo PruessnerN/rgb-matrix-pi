@@ -155,7 +155,11 @@ class StdinListener:
         return time.time() - self.key_press_time.get(key, 0.0)
     
     def get_last_direction(self):
-        """Get and consume the last direction pressed (for games like snake)"""
+        """Get the last direction pressed (doesn't clear it - persists until new direction)"""
+        return self.last_direction
+    
+    def consume_last_direction(self):
+        """Get and clear the last direction"""
         direction = self.last_direction
         self.last_direction = None
         return direction

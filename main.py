@@ -237,11 +237,11 @@ def main():
     parser.add_argument('--led-cols', type=int, default=64, help='Matrix columns')
     parser.add_argument('--led-gpio-mapping', default='adafruit-hat', 
                        help='GPIO mapping (adafruit-hat, regular, etc.)')
-    parser.add_argument('--led-slowdown-gpio', type=int, default=2,
+    parser.add_argument('--led-slowdown-gpio', type=int, default=5,
                        help='GPIO slowdown (0=no slowdown, 1-10=increasing slowdown)')
-    parser.add_argument('--led-pwm-bits', type=int, default=11,
+    parser.add_argument('--led-pwm-bits', type=int, default=5,
                        help='PWM bits (1-11, lower=less flickering but fewer colors)')
-    parser.add_argument('--led-brightness', type=int, default=100,
+    parser.add_argument('--led-brightness', type=int, default=75,
                        help='Brightness level (1-100)')
     parser.add_argument('--led-limit-refresh', type=int, default=0,
                        help='Limit refresh rate in Hz (0=no limit, try 100-200 to reduce flicker)')
@@ -305,7 +305,7 @@ def main():
             # snake game uses SnakeGame class
             def snake_runner():
                 game = SnakeGame(visualizer.matrix, grid_size=args.snake_grid)
-                tick = 0.15  # Game update speed
+                tick = 0.12  # Game update speed (faster)
                 last_update = time.time()
                 
                 while not mode_stop.is_set():
@@ -320,10 +320,13 @@ def main():
                         last_update = time.time()
                         continue
 
-                    # Check if it's time to update the game
+                    # Always update direction from input (even between game ticks)
+                    game.update_direction(input_listener)
+                    
+                    # Check if it's time to move the snake
                     now = time.time()
                     if now - last_update >= tick:
-                        game.step(input_listener)
+                        game.move()
                         visualizer.matrix.SetImage(game.render())
                         last_update = now
                     

@@ -305,7 +305,9 @@ def main():
             # snake game uses SnakeGame class
             def snake_runner():
                 game = SnakeGame(visualizer.matrix, grid_size=args.snake_grid)
-                tick = 0.2
+                tick = 0.15  # Game update speed
+                last_update = time.time()
+                
                 while not mode_stop.is_set():
                     if not game.alive:
                         img = Image.new('RGB', (visualizer.width, visualizer.height), (0,0,0))
@@ -315,14 +317,18 @@ def main():
                         visualizer.matrix.SetImage(img)
                         time.sleep(2)
                         game.reset()
+                        last_update = time.time()
                         continue
 
-                    game.step(input_listener)
-                    visualizer.matrix.SetImage(game.render())
-                    for _ in range(int(tick/0.05)):
-                        if mode_stop.is_set():
-                            break
-                        time.sleep(0.05)
+                    # Check if it's time to update the game
+                    now = time.time()
+                    if now - last_update >= tick:
+                        game.step(input_listener)
+                        visualizer.matrix.SetImage(game.render())
+                        last_update = now
+                    
+                    # Small sleep to avoid busy waiting
+                    time.sleep(0.01)
 
             mode_thread = threading.Thread(target=snake_runner, daemon=True)
         elif mode_name == 'visualizer':
@@ -367,50 +373,11 @@ def main():
     start_mode(current_mode)
 
     try:
-        # Monitor for mode-switch: press UP 3 times within 2 seconds
-        up_press_times = []
-        last_event_time = 0
+        log.info('Main loop running in %s mode', current_mode)
         
-        log.info('Main event loop starting, waiting for keyboard input...')
-        log.info('Press UP arrow 5 times within 2 seconds to switch modes')
-        
+        # Just keep the mode running indefinitely
         while True:
-            evt = input_listener.get_event(timeout=0.1)
-            if evt:
-                key, is_down, ts = evt
-                last_event_time = ts
-                
-                log.info('Main loop received event: key=%s is_down=%s', key, is_down)
-                
-                # Detect UP key press (down event)
-                if key == 'up' and is_down:
-                    # Clean old presses (older than 2 seconds)
-                    up_press_times = [t for t in up_press_times if ts - t < 2.0]
-                    up_press_times.append(ts)
-                    
-                    log.info('UP press count: %d', len(up_press_times))
-                    
-                    # If 5 presses within 2 seconds, switch mode
-                    if len(up_press_times) >= 5:
-                        log.info('Mode switch triggered!')
-                        up_press_times.clear()
-                        
-                        # stop current mode
-                        if mode_stop:
-                            mode_stop.set()
-                        if mode_thread:
-                            mode_thread.join(timeout=1.0)
-
-                        # cycle modes
-                        modes = ['clock', 'visualizer', 'snake']
-                        idx = modes.index(current_mode)
-                        current_mode = modes[(idx + 1) % len(modes)]
-                        log.info('Entering mode: %s', current_mode)
-                        start_mode(current_mode)
-                        # wait to avoid re-trigger
-                        time.sleep(0.5)
-
-            time.sleep(0.01)
+            time.sleep(1)
 
     except KeyboardInterrupt:
         print('Exiting')

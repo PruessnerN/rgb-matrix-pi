@@ -78,8 +78,8 @@ class StdinListener:
         
         while self.running:
             try:
-                # Wait for input
-                ready, _, _ = select.select([sys.stdin], [], [], 0.1)
+                # Wait for input with short timeout for responsiveness
+                ready, _, _ = select.select([sys.stdin], [], [], 0.01)
                 if not ready:
                     continue
                 

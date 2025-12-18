@@ -44,6 +44,7 @@ class Proxy:
                 time.sleep(1.0)
 
     def send(self, key, is_down, ts=None):
+        log.info('Sent: %s %s', key, 'DOWN' if is_down else 'UP')
         if ts is None:
             ts = time.time()
         msg = json.dumps({'key': key, 'is_down': bool(is_down), 'ts': ts}) + '\n'
@@ -52,7 +53,6 @@ class Proxy:
             with self.lock:
                 if self.sock:
                     self.sock.sendall(data)
-                    log.debug('Sent: %s %s', key, 'DOWN' if is_down else 'UP')
         except Exception as exc:
             log.warning('Send failed (%s), reconnecting', exc)
             # on failure, drop and reconnect

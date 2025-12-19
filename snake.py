@@ -13,24 +13,29 @@ def _get_user_home():
     return os.path.expanduser('~')
 
 def _ensure_game_data_dir():
-    """Ensure game-data directory exists and is writable."""
-    user_home = _get_user_home()
-    game_dir = os.path.join(user_home, 'game-data', 'rgb-matrix-pi')
+    """Ensure game-data directory exists and is writable at a single path."""
+    target = os.path.join('/var', 'tmp', 'rgb-matrix-pi')  # persistent on most systems
+
     try:
-        os.makedirs(game_dir, exist_ok=True, mode=0o777)
-        # If running as root/sudo, make sure directory is owned by actual user
+        os.makedirs(target, exist_ok=True, mode=0o777)
         if os.environ.get('SUDO_USER'):
             try:
                 import pwd
                 user_info = pwd.getpwnam(os.environ['SUDO_USER'])
-                os.chown(game_dir, user_info.pw_uid, user_info.pw_gid)
-                os.chown(os.path.dirname(game_dir), user_info.pw_uid, user_info.pw_gid)
+                os.chown(target, user_info.pw_uid, user_info.pw_gid)
+                parent = os.path.dirname(target)
+                if parent and os.path.isdir(parent):
+                    os.chown(parent, user_info.pw_uid, user_info.pw_gid)
             except Exception as chown_err:
-                log.warning('Could not chown game-data directory: %s', chown_err)
+                log.warning('Could not chown %s: %s', target, chown_err)
+        return target
+    except PermissionError as e:
+        log.error('Permission denied creating %s: %s', target, e)
     except Exception as e:
-        log.error('Failed to create game-data directory %s: %s', game_dir, e)
-        raise
-    return game_dir
+        log.error('Failed to create %s: %s', target, e)
+
+    log.error('Could not ensure a writable game-data directory; high scores will be disabled.')
+    return None
 
 class SnakeGame:
     """Snake game logic and rendering on a logical grid.
@@ -50,7 +55,7 @@ class SnakeGame:
         # High score persistence
         try:
             self.high_score_dir = _ensure_game_data_dir()
-            self.high_score_path = os.path.join(self.high_score_dir, 'highscore.txt')
+            self.high_score_path = os.path.join(self.high_score_dir, 'highscore.txt') if self.high_score_dir else None
         except Exception as e:
             log.error('Could not set up high score directory: %s. High scores will not persist.', e)
             self.high_score_dir = None

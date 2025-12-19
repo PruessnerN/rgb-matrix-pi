@@ -107,32 +107,35 @@ class StdinListener:
                     break
                 
                 # Start of escape sequence
-                    if ch == '\x1b':
-                        sequence = [ch]
-                        # Read subsequent chars until short gap (captures CSI/SS3 and longer variants)
-                        last_read = time.time()
-                        while len(sequence) < 6:  # cap length to avoid runaway
-                            ready, _, _ = select.select([sys.stdin], [], [], 0.02)
-                            if not ready:
-                                break
+                if ch == '\x1b':
+                    sequence = [ch]
+                    # Read the next 2 characters with short timeout (handles CSI and SS3 arrows)
+                    for _ in range(2):
+                        ready, _, _ = select.select([sys.stdin], [], [], 0.05)
+                        if ready:
                             nch = sys.stdin.read(1)
-                            if not nch:
-                                break
-                            sequence.append(nch)
-                            last_read = time.time()
+                            if nch:
+                                sequence.append(nch)
+                        else:
+                            break
 
-                        # Map using the first 3 chars (ESC + code) if present
-                        seq3 = ''.join(sequence[:3]) if len(sequence) >= 3 else None
-                        key = self.ESCAPE_MAP.get(seq3)
+                    # Only handle complete 3-char sequences
+                    if len(sequence) == 3:
+                        seq_str = ''.join(sequence)
+                        log.debug('ESC sequence read: %r', seq_str)
+                        key = self.ESCAPE_MAP.get(seq_str)
                         if key:
                             ts = time.time()
                             self.key_states[key] = True
                             self.key_press_time[key] = ts
                             self.last_direction = key
                             self.direction_queue.append(key)
+                            log.debug('Enqueue direction: %s (queue size=%d)', key, len(self.direction_queue))
                             self.event_queue.put((key, True, ts))
-                        # unknown sequences are ignored silently
-                        continue
+                        else:
+                            log.debug('Unrecognized ESC sequence: %r', seq_str)
+                    # Incomplete sequences are ignored
+                    continue
 
             except Exception as e:
                 log.exception('Stdin read error: %s', e)

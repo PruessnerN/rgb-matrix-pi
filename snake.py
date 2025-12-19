@@ -21,7 +21,9 @@ class SnakeGame:
         self.cell_w = max(1, matrix.width // self.grid)
         self.cell_h = max(1, matrix.height // self.grid)
         # High score persistence
-        self.high_score_path = os.path.join(os.path.dirname(__file__), 'highscore.txt')
+        self.high_score_dir = os.path.join(os.path.expanduser('~'), 'game-data', 'rgb-matrix-pi')
+        os.makedirs(self.high_score_dir, exist_ok=True)
+        self.high_score_path = os.path.join(self.high_score_dir, 'highscore.txt')
         self.high_score = self._load_high_score(self.high_score_path)
         self.new_high = False
         self.reset()

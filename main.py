@@ -310,9 +310,9 @@ def main():
                         # Show final score
                         msg = f'Score: {game.score}'
                         draw.text((2, visualizer.height//2 - 10), msg, fill=(255,255,0))
-                        # Show high score, mark NEW if achieved
+                        # Show high score
                         hs = getattr(game, 'high_score', 0)
-                        hs_msg = f'High: {hs}' + (' (NEW)' if getattr(game, 'new_high', False) else '')
+                        hs_msg = f'High: {hs}'
                         draw.text((2, visualizer.height//2 + 6), hs_msg, fill=(0,200,255))
                         visualizer.matrix.SetImage(img)
                         time.sleep(2)

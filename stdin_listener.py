@@ -11,6 +11,12 @@ import os
 from collections import deque
 
 log = logging.getLogger('stdin_listener')
+# Ensure handler so logs don't get swallowed or interleaved oddly with stdout
+if not log.handlers:
+    _handler = logging.StreamHandler(sys.stderr)
+    _handler.setFormatter(logging.Formatter('[%(asctime)s] %(name)s %(levelname)s: %(message)s'))
+    log.addHandler(_handler)
+    log.setLevel(logging.INFO)
 
 
 class StdinListener:
@@ -93,6 +99,7 @@ class StdinListener:
                 ch = sys.stdin.read(1)
                 if not ch:
                     continue
+                log.info('Char read: %r (hex=%s)', ch, ch.encode('latin-1').hex())
                 
                 # Handle Ctrl+C immediately
                 if ch == '\x03':

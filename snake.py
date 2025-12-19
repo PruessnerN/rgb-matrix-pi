@@ -5,6 +5,13 @@ import os
 
 log = logging.getLogger('snake')
 
+def _get_user_home():
+    """Get the actual user's home directory, accounting for sudo."""
+    if os.environ.get('SUDO_USER'):
+        import pwd
+        return pwd.getpwnam(os.environ['SUDO_USER']).pw_dir
+    return os.path.expanduser('~')
+
 class SnakeGame:
     """Snake game logic and rendering on a logical grid.
 
@@ -21,7 +28,8 @@ class SnakeGame:
         self.cell_w = max(1, matrix.width // self.grid)
         self.cell_h = max(1, matrix.height // self.grid)
         # High score persistence
-        self.high_score_dir = os.path.join(os.path.expanduser('~'), 'game-data', 'rgb-matrix-pi')
+        user_home = _get_user_home()
+        self.high_score_dir = os.path.join(user_home, 'game-data', 'rgb-matrix-pi')
         os.makedirs(self.high_score_dir, exist_ok=True)
         self.high_score_path = os.path.join(self.high_score_dir, 'highscore.txt')
         self.high_score = self._load_high_score(self.high_score_path)

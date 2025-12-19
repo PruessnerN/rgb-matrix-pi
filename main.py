@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import time
 import random
 import argparse
 import threading
-import queue
-import os
 import logging
+
+# Configure logging for raw TTY (CRLF line endings prevent stair-step indent)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%H:%M:%S')
+for handler in logging.root.handlers:
+    handler.terminator = '\r\n'
 
 from stdin_listener import StdinListener as InputListener
 from clock import ClockDisplay
@@ -26,6 +29,15 @@ from algorithms.random_walk import RandomWalkAlgorithm
 from maze_generator import generate_random_walls, generate_maze_walls, generate_rooms
 
 log = logging.getLogger('main')
+
+# Configure root logger for proper line endings in raw TTY mode
+for handler in logging.root.handlers:
+    handler.terminator = '\r\n'
+# Also ensure basicConfig handler has CRLF if not yet configured
+if not logging.root.handlers:
+    handler = logging.StreamHandler()
+    handler.terminator = '\r\n'
+    logging.root.addHandler(handler)
 
 
 class PathfindingVisualizer:

@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 import sys
 import logging
+import warnings
+
+# Suppress Pillow deprecation warnings (from rpi-rgb-led-matrix library)
+warnings.filterwarnings('ignore', category=DeprecationWarning, module='PIL')
+
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 from PIL import Image, ImageDraw
 import time

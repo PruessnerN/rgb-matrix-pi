@@ -12,6 +12,21 @@ def _get_user_home():
         return pwd.getpwnam(os.environ['SUDO_USER']).pw_dir
     return os.path.expanduser('~')
 
+def _ensure_game_data_dir():
+    """Ensure game-data directory exists and is writable."""
+    user_home = _get_user_home()
+    game_dir = os.path.join(user_home, 'game-data', 'rgb-matrix-pi')
+    try:
+        os.makedirs(game_dir, exist_ok=True, mode=0o755)
+        # If running as root/sudo, make sure the directory is owned by the actual user
+        if os.environ.get('SUDO_USER'):
+            import pwd
+            user_info = pwd.getpwnam(os.environ['SUDO_USER'])
+            os.chown(game_dir, user_info.pw_uid, user_info.pw_gid)
+    except Exception as e:
+        log.warning('Could not ensure game-data directory: %s', e)
+    return game_dir
+
 class SnakeGame:
     """Snake game logic and rendering on a logical grid.
 
@@ -28,9 +43,7 @@ class SnakeGame:
         self.cell_w = max(1, matrix.width // self.grid)
         self.cell_h = max(1, matrix.height // self.grid)
         # High score persistence
-        user_home = _get_user_home()
-        self.high_score_dir = os.path.join(user_home, 'game-data', 'rgb-matrix-pi')
-        os.makedirs(self.high_score_dir, exist_ok=True)
+        self.high_score_dir = _ensure_game_data_dir()
         self.high_score_path = os.path.join(self.high_score_dir, 'highscore.txt')
         self.high_score = self._load_high_score(self.high_score_path)
         self.new_high = False
@@ -104,9 +117,14 @@ class SnakeGame:
 
     def _save_high_score(self, path, value):
         tmp = path + '.tmp'
-        with open(tmp, 'w') as f:
-            f.write(str(int(value)))
-        os.replace(tmp, path)
+        try:
+            with open(tmp, 'w') as f:
+                f.write(str(int(value)))
+            os.replace(tmp, path)
+        except PermissionError as e:
+            log.error('Permission denied saving high score to %s: %s', path, e)
+        except Exception as e:
+            log.error('Failed to save high score: %s', e)
     
     def step(self, input_listener):
         """Legacy combined method for backward compatibility"""

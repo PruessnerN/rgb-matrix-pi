@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
+import sys
+import logging
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 from PIL import Image, ImageDraw
 import time
 import random
 import argparse
 import threading
-import logging
 
-# Configure logging for raw TTY (CRLF line endings prevent stair-step indent)
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s: %(message)s', datefmt='%H:%M:%S')
-for handler in logging.root.handlers:
-    handler.terminator = '\r\n'
+# Configure stderr handler with CRLF before anything else logs
+stderr_handler = logging.StreamHandler(sys.stderr)
+stderr_handler.setFormatter(logging.Formatter('%(asctime)s %(name)s: %(message)s', datefmt='%H:%M:%S'))
+stderr_handler.terminator = '\r\n'
+logging.root.addHandler(stderr_handler)
+logging.root.setLevel(logging.INFO)
 
 from stdin_listener import StdinListener as InputListener
 from clock import ClockDisplay

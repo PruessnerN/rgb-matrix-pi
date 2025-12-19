@@ -1,5 +1,8 @@
 from PIL import Image
 import random
+import logging
+
+log = logging.getLogger('snake')
 
 class SnakeGame:
     """Snake game logic and rendering on a logical grid.
@@ -36,25 +39,32 @@ class SnakeGame:
     def update_direction(self, input_listener):
         """Update direction based on queued input (captures quick taps)."""
         new_dir = input_listener.consume_direction()
-        if new_dir == 'up' and self.direction != (0,1):
-            self.direction = (0, -1)
-        elif new_dir == 'down' and self.direction != (0,-1):
-            self.direction = (0, 1)
-        elif new_dir == 'left' and self.direction != (1,0):
-            self.direction = (-1, 0)
-        elif new_dir == 'right' and self.direction != (-1,0):
-            self.direction = (1, 0)
+        if new_dir:
+            old_dir = self.direction
+            if new_dir == 'up' and self.direction != (0,1):
+                self.direction = (0, -1)
+            elif new_dir == 'down' and self.direction != (0,-1):
+                self.direction = (0, 1)
+            elif new_dir == 'left' and self.direction != (1,0):
+                self.direction = (-1, 0)
+            elif new_dir == 'right' and self.direction != (-1,0):
+                self.direction = (1, 0)
+            if self.direction != old_dir:
+                log.info('Direction change: %s -> %s', old_dir, self.direction)
     
     def move(self):
         """Move the snake one step (called on game tick)"""
         head = self.snake[0]
         new_head = ((head[0] + self.direction[0]) % self.grid, (head[1] + self.direction[1]) % self.grid)
+        log.debug('Move from %s to %s dir=%s', head, new_head, self.direction)
         if new_head in self.snake:
             self.alive = False
+            log.info('Collision detected, game over')
             return
         self.snake.insert(0, new_head)
         if new_head == self.food:
             self.score += 1
+            log.info('Food eaten, score=%d', self.score)
             self.place_food()
         else:
             self.snake.pop()

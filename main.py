@@ -300,7 +300,7 @@ def main():
             # snake game uses SnakeGame class
             def snake_runner():
                 game = SnakeGame(visualizer.matrix, grid_size=args.snake_grid)
-                tick = 0.18  # slower to reduce overshoot while we debug input
+                tick = 0.12  # faster, taps queued for responsiveness
                 last_update = time.time()
                 
                 while not mode_stop.is_set():
@@ -326,7 +326,7 @@ def main():
                         last_update = now
                     
                     # Small sleep to avoid busy waiting
-                    time.sleep(0.01)
+                    time.sleep(0.005)
 
             mode_thread = threading.Thread(target=snake_runner, daemon=True)
         elif mode_name == 'visualizer':

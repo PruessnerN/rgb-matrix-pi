@@ -132,7 +132,7 @@ class StdinListener:
                         second = buf.popleft()
                         third = buf.popleft()
                         seq_str = ch + second + third
-                        log.info('ESC sequence read: %r', seq_str)
+                        log.debug('ESC sequence read: %r', seq_str)
                         key = self.ESCAPE_MAP.get(seq_str)
                         if key:
                             ts = time.time()
@@ -140,10 +140,10 @@ class StdinListener:
                             self.key_press_time[key] = ts
                             self.last_direction = key
                             self.direction_queue.append(key)
-                            log.info('Enqueue direction: %s (queue size=%d)', key, len(self.direction_queue))
+                            log.debug('Enqueue direction: %s (queue size=%d)', key, len(self.direction_queue))
                             self.event_queue.put((key, True, ts))
                         else:
-                            log.info('Unrecognized ESC sequence: %r', seq_str)
+                            log.debug('Unrecognized ESC sequence: %r', seq_str)
                         continue
 
                     # Ignore other chars

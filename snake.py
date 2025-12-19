@@ -149,7 +149,7 @@ class SnakeGame:
     def render(self):
         img = Image.new('RGB', (self.matrix.width, self.matrix.height), (0,0,0))
         for idx, (x, y) in enumerate(self.snake):
-            color = (0, 120, 0) if idx == 0 else (0, 255, 0)
+            color = (0, 255, 0) if idx == 0 else (0, 120, 0)
             for dx in range(self.cell_w):
                 for dy in range(self.cell_h):
                     px = x * self.cell_w + dx

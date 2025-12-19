@@ -122,7 +122,7 @@ class StdinListener:
                     # Only handle complete 3-char sequences
                     if len(sequence) == 3:
                         seq_str = ''.join(sequence)
-                        log.debug('ESC sequence read: %r', seq_str)
+                        log.info('ESC sequence read: %r', seq_str)
                         key = self.ESCAPE_MAP.get(seq_str)
                         if key:
                             ts = time.time()
@@ -130,10 +130,10 @@ class StdinListener:
                             self.key_press_time[key] = ts
                             self.last_direction = key
                             self.direction_queue.append(key)
-                            log.debug('Enqueue direction: %s (queue size=%d)', key, len(self.direction_queue))
+                            log.info('Enqueue direction: %s (queue size=%d)', key, len(self.direction_queue))
                             self.event_queue.put((key, True, ts))
                         else:
-                            log.debug('Unrecognized ESC sequence: %r', seq_str)
+                            log.info('Unrecognized ESC sequence: %r', seq_str)
                     # Incomplete sequences are ignored
                     continue
 

@@ -377,12 +377,19 @@ def main():
                 maze_types = ['random', 'walls', 'rooms']
                 maze_index = 0
                 while not mode_stop.is_set():
+                    # Generate NEW random points for EACH execution
                     start_pt, end_pt = visualizer.generate_random_points()
-                    # generate obstacles per current maze (use --maze arg)
+                    
+                    # Select a random algorithm for THIS execution
+                    alg = random.choice(visualizer.algorithms)
+                    
+                    # Generate obstacles per current maze (use --maze arg)
                     current_maze_type = args.maze
                     if current_maze_type == 'alternate':
                         current_maze_type = maze_types[maze_index % len(maze_types)]
                         maze_index += 1
+                    
+                    # Generate NEW obstacles for EACH execution
                     obstacles = set()
                     if current_maze_type == 'random':
                         obstacles = generate_random_walls(visualizer.width, visualizer.height, density=0.2)
@@ -390,21 +397,18 @@ def main():
                         obstacles = generate_maze_walls(visualizer.width, visualizer.height, wall_length=10, num_walls=20)
                     elif current_maze_type == 'rooms':
                         obstacles = generate_rooms(visualizer.width, visualizer.height, num_rooms=6)
-                    # ensure start/end clear
+                    
+                    # Ensure start/end clear
                     for dx in range(-1,2):
                         for dy in range(-1,2):
                             obstacles.discard((start_pt[0]+dx, start_pt[1]+dy))
                             obstacles.discard((end_pt[0]+dx, end_pt[1]+dy))
-
-                    # run each algorithm (interruptible via stop_event)
-                    shuffled = visualizer.algorithms.copy()
-                    random.shuffle(shuffled)
-                    for alg in shuffled:
-                        if mode_stop.is_set():
-                            return
-                        visualizer.visualize_algorithm(alg, start_pt, end_pt, obstacles, stop_event=mode_stop)
-                        time.sleep(1)
-                    time.sleep(2)
+                    
+                    # Run the selected algorithm (interruptible via stop_event)
+                    if mode_stop.is_set():
+                        return
+                    visualizer.visualize_algorithm(alg, start_pt, end_pt, obstacles, stop_event=mode_stop)
+                    time.sleep(1)
 
             mode_thread = threading.Thread(target=vis_runner, daemon=True)
         mode_thread.start()
